@@ -211,6 +211,24 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // GET /reset → wipe session and restart so a fresh QR appears
+  if (req.method === 'GET' && req.url === '/reset') {
+    console.log('\n🔄 /reset called — wiping session and restarting...');
+    const authPath = join(process.cwd(), '.wwebjs_auth');
+    const qrPath = join(process.cwd(), 'qr.png');
+    try {
+      if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
+      if (fs.existsSync(qrPath)) fs.rmSync(qrPath, { force: true });
+      console.log('✓ Session cleared.');
+    } catch (e) {
+      console.error('Error clearing session:', e.message);
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<h2>✅ Session reset!</h2><p>Restarting client... wait 10 seconds then <a href="/">scan the new QR</a>.</p>');
+    setTimeout(() => restartClient('manual_reset'), 500);
+    return;
+  }
+
   // GET /status → connection state
   if (req.method === 'GET' && req.url === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
